@@ -1,0 +1,35 @@
+---
+layout:     post
+title:      "Android 收集"
+subtitle:   " 常用链接导航"
+date:       2016-08-20 04:00:00
+author:     "图乐"
+#header-img: ""
+catalog: true
+tags:
+    - Android
+---
+
+### 博客收集
+
+博主  | 主要内容
+------------- | -------------
+[老罗的Android之旅](http://blog.csdn.net/Luoshengyang/)|Android源码情景剖析
+[Gityuan](http://gityuan.com)|基于 Android 6.0  系统 源码分析
+[邓平凡](http://blog.csdn.net/innost?viewmode=contents)|深入理解Android 系列
+[江清清的技术专栏](http://www.lcode.org/)| 主要 React Native
+
+
+### 技术网站
+
+名称  | 主要内容
+------------- | -------------
+[干货集中营](http://gank.io/)| 每日分享妹子图 和 技术干货，还有供大家中午休息的休闲视频
+[Android Weekly ](http://androidblog.cn/)| Android 开发圈子最早，最有名的周报
+[Android Blog 周刊 ](http://androidblog.cn/)| [@陆镇生_Jomeslu ](http://weibo.com/p/1005052106134235)
+[Android开发技术周报 ](http://www.androidweekly.cn/)| [@脉脉不嘚語](http://weibo.com/234959219)
+[Androidcat](http://www.androidcat.com/?from=androidplus)| Android 书签导航
+[极客导航](http://www.jikedaohang.com/)  | 技术导航
+[codekk](http://p.codekk.com/)  |Android 开源库搜索、分析
+[泡在网上的日子](http://www.jcodecraeer.com/)  |Android 开源库 、技术文章
+[推酷](http://www.tuicool.com/)  |IT人专属的个性聚合阅读社区（爬虫聚合）

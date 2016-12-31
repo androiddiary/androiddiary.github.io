@@ -50,10 +50,12 @@ public static void gc() {
     }
 }
 ```
-突然感觉有点不对呢，印象中文档都说和直接调用Runtime.getRuntime().gc();一样的
+
+突然感觉有点不对呢，印象中文档都说和直接调用Runtime.getRuntime().gc();一样的，并且在jdk中也是直接调用的实现。所以由此而想到Google应该是在某个版本更改了Android中的实现。经过查看api19也就是Android 4.4还是没有变化的
 
 ![Paste_Image.png](http://upload-images.jianshu.io/upload_images/641851-508a5f02ec24cf1d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
-并且在jdk中也是直接调用的实现。所以由此而想到Google应该是在某个版本更改了Android中的实现。经过查看api19也就是Android 4.4还是没有变化的
+
+
 ```
    /**
      * Indicates to the VM that it would be a good time to run the
@@ -64,8 +66,10 @@ public static void gc() {
         Runtime.getRuntime().gc();
     }
 ```
+
 而在Android 5.0（API21）之后也就变成了一开始提到的样子。
 具体分析一下Google对System.gc()进行了怎样的改变,调用System.gc只有当justRanFinalization 为true的时候才执行一次Runtime.getRuntime().gc();也就是说连续多次调用时不能全部都生效的，再看看justRanFinalization 是啥时候改变的
+
 ```
 /**
  * Runs the finalization methods of any objects pending finalization.
@@ -97,8 +101,10 @@ public static void runFinalization() {
     }
 }
 ```
+
 忽然发现这个除了会改变justRanFinalization 的值，在 runGC  为true时调用这个方法也会触发 Runtime.getRuntime().gc();
 让我们看看justRanFinalization的定义
+
 ```
 /**
  * Whether or not we need to do a GC before running the finalizers.
@@ -110,9 +116,11 @@ private static boolean runGC;
  */
 private static boolean justRanFinalization;
 ```
+
 也就是我们  gc/runFinlization/gc 这样调用完成一次gcAndFinalize,但是要避免多次反复的调用System.gc().
 
 我们可以看一下ZygoteInit中的gcAndFinalize()方法中如何使用的
+
 ```
 /**
  * Runs several special GCs to try to clean up a few generations of
@@ -129,6 +137,7 @@ private static boolean justRanFinalization;
     System.gc();
 }
 ```
+
 这里的 VMRuntime.getRuntime().runFinalizationSync();的作用其实和Runtime.getRuntime().runFinalization();作用一样。Runtime.getRuntime().gc()是告诉垃圾收集器打算进行垃圾收集，而垃圾收集器进不进行收集是不确定的;Runtime.getRuntime().runFinalization();强制调用已经失去引用的对象的finalize方法
 
 让我们看一下谷歌为什么这样修改System.gc()这个方法呢？

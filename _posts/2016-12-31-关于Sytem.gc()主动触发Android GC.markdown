@@ -1,0 +1,159 @@
+---
+layout:     post
+title:      "关于Sytem.gc()主动触发Android GC"
+#subtitle:   " 常用链接导航"
+date:       2016-12-31 12:00:00
+author:     "图乐"
+#header-img: ""
+catalog: true
+tags:
+    - android日记
+    - android gc
+---
+
+
+欢迎访问[Android日记][1],如有转载请注明Android日记 http://androiddiary.site
+2016.12.31 周六 晴 杭州
+
+### 记录今天值得阅读的文章：
+ 1. [拓展篇：注解处理器最佳实践][2]
+ 2. [Glide源码分析][3]
+
+---
+### 写日记
+由于想主动的通过代码触发gc测试软引用与弱引用的不同表现，很自然我就想到了去调用System.gc();既然用到了这个函数我就想去看看这个函数是怎么样实现的
+```java
+/**
+ * Runs the garbage collector. 
+ * Calling the gc method suggests that the Java Virtual
+ * Machine expend effort toward recycling unused objects in order to
+ * make the memory they currently occupy available for quick reuse.
+ * When control returns from the method call, the Java Virtual 
+ * Machine has made a best effort to reclaim space from all discarded 
+ * objects.
+ * The call <code>System.gc()</code> is effectively equivalent to the 
+ * call: Runtime.getRuntime().gc()
+ * * @see     java.lang.Runtime#gc()
+ */
+public static void gc() { 
+   boolean shouldRunGC;
+   synchronized (LOCK) {
+        shouldRunGC = justRanFinalization;
+        if (shouldRunGC) {
+            justRanFinalization = false;
+        } else {
+            runGC = true;
+        }
+    }
+    if (shouldRunGC) {
+        Runtime.getRuntime().gc();
+    }
+}
+```
+突然感觉有点不对呢，印象中文档都说和直接调用Runtime.getRuntime().gc();一样的
+
+![Paste_Image.png](http://upload-images.jianshu.io/upload_images/641851-508a5f02ec24cf1d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+并且在jdk中也是直接调用的实现。所以由此而想到Google应该是在某个版本更改了Android中的实现。经过查看api19也就是Android 4.4还是没有变化的
+```java
+   /**
+     * Indicates to the VM that it would be a good time to run the
+     * garbage collector. Note that this is a hint only. There is no guarantee
+     * that the garbage collector will actually be run.
+     */
+    public static void gc() {
+        Runtime.getRuntime().gc();
+    }
+```
+而在Android 5.0（API21）之后也就变成了一开始提到的样子。
+具体分析一下Google对System.gc()进行了怎样的改变,调用System.gc只有当justRanFinalization 为true的时候才执行一次Runtime.getRuntime().gc();也就是说连续多次调用时不能全部都生效的，再看看justRanFinalization 是啥时候改变的
+```java
+/**
+ * Runs the finalization methods of any objects pending finalization.
+ * <p>
+ * Calling this method suggests that the Java Virtual Machine expend
+ * effort toward running the <code>finalize</code> methods of objects
+ * that have been found to be discarded but whose <code>finalize</code>
+ * methods have not yet been run. When control returns from the
+ * method call, the Java Virtual Machine has made a best effort to
+ * complete all outstanding finalizations.
+ * <p>
+ * The call <code>System.runFinalization()</code> is effectively
+ * equivalent to the call:
+ * Runtime.getRuntime().runFinalization()
+ * * @see     java.lang.Runtime#runFinalization()
+ */
+public static void runFinalization() {
+    boolean shouldRunGC;
+    synchronized (LOCK) {
+        shouldRunGC = runGC;
+        runGC = false;
+    }
+    if (shouldRunGC) {
+        Runtime.getRuntime().gc();
+    }
+    Runtime.getRuntime().runFinalization();
+    synchronized (LOCK) {
+        justRanFinalization = true;
+    }
+}
+```
+忽然发现这个除了会改变justRanFinalization 的值，在 runGC  为true时调用这个方法也会触发 Runtime.getRuntime().gc();
+让我们看看justRanFinalization的定义
+```
+/**
+ * Whether or not we need to do a GC before running the finalizers.
+ */
+private static boolean runGC;
+/**
+ * If we just ran finalization, we might want to do a GC to free the finalized objects.
+ * This lets us do gc/runFinlization/gc sequences but prevents back to back System.gc().
+ */
+private static boolean justRanFinalization;
+```
+也就是我们  gc/runFinlization/gc 这样调用完成一次gcAndFinalize,但是要避免多次反复的调用System.gc().
+
+我们可以看一下ZygoteInit中的gcAndFinalize()方法中如何使用的
+```
+/**
+ * Runs several special GCs to try to clean up a few generations of
+ * softly- and final-reachable objects, along with any other garbage.
+ * This is only useful just before a fork().
+ */
+ static void gcAndFinalize() {
+    final VMRuntime runtime = VMRuntime.getRuntime();
+    /* runFinalizationSync() lets finalizers be called in Zygote,
+     * which doesn't have a HeapWorker thread.
+     */
+    System.gc();
+    runtime.runFinalizationSync();
+    System.gc();
+}
+```
+这里的 VMRuntime.getRuntime().runFinalizationSync();的作用其实和Runtime.getRuntime().runFinalization();作用一样。Runtime.getRuntime().gc()是告诉垃圾收集器打算进行垃圾收集，而垃圾收集器进不进行收集是不确定的;Runtime.getRuntime().runFinalization();强制调用已经失去引用的对象的finalize方法
+
+让我们看一下谷歌为什么这样修改System.gc()这个方法呢？
+从这个[commit][4]看
+
+> Avoid running Runtime.gc() until we need to run finalization.
+This prevents excessive explicit GC which are called from apps to get
+good GC behavior on Dalvik. Calling System.gc() does not help on ART
+since GC for alloc is much rarer.
+If running finalizers is requested following a System.gc we remember
+that a GC was requested and perform it ahead of finalization.
+Bug: 12004934
+Change-Id: Id1343ce8b5378c5f53c1e5649c06ddd045f56a3b 
+
+从这里可以得到两点信息： 
+1.首先这是为了修复一个bug 12004934
+2.其次在art模式下，直接调用gc的效果不大。
+
+参考文章：
+System.GC()并不一定执行的原因 http://www.eoeandroid.com/thread-922938-1-1.html
+Android System.gc()注意点
+http://blog.csdn.net/fearGod/article/details/46364599
+
+
+  [1]: androiddiary.site
+  [2]: http://blog.csdn.net/dd864140130/article/details/53957691
+  [3]: http://hpw123.coding.me/2016/12/30/Glide%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/
+  [4]: https://android.googlesource.com/platform/libcore/+/930e26f0f59c0ce1020524269c82492f3c4ea722%5E!/luni/src/main/java/java/lang/System.java

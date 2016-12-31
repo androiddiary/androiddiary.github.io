@@ -54,7 +54,7 @@ public static void gc() {
 
 ![Paste_Image.png](http://upload-images.jianshu.io/upload_images/641851-508a5f02ec24cf1d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 并且在jdk中也是直接调用的实现。所以由此而想到Google应该是在某个版本更改了Android中的实现。经过查看api19也就是Android 4.4还是没有变化的
-```java
+```
    /**
      * Indicates to the VM that it would be a good time to run the
      * garbage collector. Note that this is a hint only. There is no guarantee
@@ -66,7 +66,7 @@ public static void gc() {
 ```
 而在Android 5.0（API21）之后也就变成了一开始提到的样子。
 具体分析一下Google对System.gc()进行了怎样的改变,调用System.gc只有当justRanFinalization 为true的时候才执行一次Runtime.getRuntime().gc();也就是说连续多次调用时不能全部都生效的，再看看justRanFinalization 是啥时候改变的
-```java
+```
 /**
  * Runs the finalization methods of any objects pending finalization.
  * <p>
@@ -148,8 +148,9 @@ Change-Id: Id1343ce8b5378c5f53c1e5649c06ddd045f56a3b
 2.其次在art模式下，直接调用gc的效果不大。
 
 参考文章：
-System.GC()并不一定执行的原因 http://www.eoeandroid.com/thread-922938-1-1.html
-Android System.gc()注意点
+
+ - System.GC()并不一定执行的原因 http://www.eoeandroid.com/thread-922938-1-1.html
+ - Android System.gc()注意点
 http://blog.csdn.net/fearGod/article/details/46364599
 
 

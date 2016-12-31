@@ -19,10 +19,10 @@ tags:
  1. [拓展篇：注解处理器最佳实践][2]
  2. [Glide源码分析][3]
 
----
 ### 写日记
 由于想主动的通过代码触发gc测试软引用与弱引用的不同表现，很自然我就想到了去调用System.gc();既然用到了这个函数我就想去看看这个函数是怎么样实现的
-```java
+
+```
 /**
  * Runs the garbage collector. 
  * Calling the gc method suggests that the Java Virtual

@@ -1,0 +1,30 @@
+---
+title: 2017-1-1 从内核调教开始
+layout:     post
+#subtitle:   " 常用链接导航"
+date:       2017-1-1 12:00:00
+author:     "图乐"
+#header-img: ""
+catalog: true
+tags:
+    - android日记
+    - Android
+    - Android kernel
+---
+
+
+欢迎访问[Android日记][1],如有转载请注明Android日记 http://androiddiary.site
+2017.1.1 周日 晴 杭州
+
+
+### 写日记
+我不是一名普通的Android 用户，也不仅仅是Android 应用开发者，更是手机极客。2017回归初心，从玩的角度入手开始学习Android内核。Android kernel 通常来说都是手机厂商定制的，普通用户无法接触到这一部分的东西。我手机的Oneplus one 已经被我刷入了第三方开源的Boeffla kernel(读者不要随便尝试，刷错内核会导致无法开机)。首先刷入内核之后我们看一下大概能修改哪些东西
+
+![Screenshot_2017-01-01-14-39-54-114_com.grarak.kerneladiutor.png](http://upload-images.jianshu.io/upload_images/641851-b882cc9f135bc25e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+也就是说像CPU，GPU，IO，内存管理，以及TCP 拥塞算法，手机init配置以及设备信息等都可以修改的。
+仅仅修改一些算法，调整CPU频率，限制应用的运行内存等调整参数的做法是一些手机爱好者玩的，可我不仅仅是手机爱好者，还是一名工程师，我所以，我还想深入的去了解这些算法，这些理论。
+在接下来的日子里，我会从android内核调教APP普通的修改，慢慢的深入完成android内核调教分析的系列文章。
+
+
+  [1]: androiddiary.site
